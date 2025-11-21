@@ -83,10 +83,10 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
     if (option === riddle.answer) {
       // Correct!
       playSound('correct');
-      // Add a small delay before showing reward so they hear the sound
+      // Add a small delay before showing reward so they hear the sound and see the animation
       setTimeout(() => {
           onCorrect();
-      }, 500);
+      }, 700);
     } else {
       // Wrong
       setIsWrong(true);
@@ -142,9 +142,17 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             {riddle.options.map((option) => {
                 const isSelected = selectedOption === option;
+                const isCorrect = isSelected && option === riddle.answer;
+                const isError = isSelected && isWrong;
                 
-                // Styles for wrong state
-                const wrongStyle = isSelected && isWrong ? 'bg-red-500 text-white shake-animation' : 'bg-white text-gray-700 hover:bg-blue-50';
+                // Styles based on state
+                let stateClasses = 'bg-white text-gray-700 hover:bg-blue-50 border-gray-200';
+                
+                if (isCorrect) {
+                    stateClasses = 'bg-green-500 text-white border-green-600 animate-celebrate';
+                } else if (isError) {
+                    stateClasses = 'bg-red-500 text-white border-red-600 shake-animation';
+                }
                 
                 return (
                     <button
@@ -154,14 +162,14 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
                         className={`
                             relative overflow-hidden
                             py-6 px-8 rounded-2xl text-2xl md:text-3xl font-bold
-                            shadow-md border-b-4 border-gray-200
+                            shadow-md border-b-4
                             transition-all duration-100 active:border-b-0 active:translate-y-1
                             flex items-center justify-center group
-                            ${wrongStyle}
+                            ${stateClasses}
                         `}
                     >
-                        <span className="relative z-10 group-hover:scale-110 transition-transform">{option}</span>
-                        {isSelected && isWrong && (
+                        <span className={`relative z-10 transition-transform ${!isSelected ? 'group-hover:scale-110' : ''}`}>{option}</span>
+                        {isError && (
                             <span className="absolute inset-0 bg-red-100 opacity-20 animate-pulse"></span>
                         )}
                     </button>
@@ -173,11 +181,20 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
             .shake-animation {
                 animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
             }
+            .animate-celebrate {
+                animation: celebrate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            }
             @keyframes shake {
                 10%, 90% { transform: translate3d(-1px, 0, 0); }
                 20%, 80% { transform: translate3d(2px, 0, 0); }
                 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
                 40%, 60% { transform: translate3d(4px, 0, 0); }
+            }
+            @keyframes celebrate {
+                0% { transform: scale(1); }
+                40% { transform: scale(1.1); }
+                70% { transform: scale(1.1); }
+                100% { transform: scale(1); }
             }
         `}</style>
     </div>
