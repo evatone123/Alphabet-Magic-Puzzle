@@ -1,5 +1,5 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
-import { RiddleData } from "../types";
+import { RiddleData, Difficulty } from "../types";
 
 // Initialize Gemini Client
 // Note: The API Key is expected to be in process.env.API_KEY
@@ -8,11 +8,31 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 /**
  * Generates a riddle, answer, and wrong options for a given letter.
  */
-export const generateRiddle = async (letter: string): Promise<RiddleData> => {
+export const generateRiddle = async (letter: string, difficulty: Difficulty): Promise<RiddleData> => {
   const modelId = "gemini-2.5-flash";
+  
+  let difficultyPrompt = "";
+  let distractorPrompt = "Provide 3 distinct wrong answers (distractors) that are also simple words suitable for kids.";
+
+  switch(difficulty) {
+    case Difficulty.EASY:
+      difficultyPrompt = "Generate a very simple, direct clue for a 3-4 year old toddler. Use extremely common animals, foods, or objects. The riddle should be short and the answer obvious.";
+      break;
+    case Difficulty.MEDIUM:
+      difficultyPrompt = "Generate a fun riddle for a 5-6 year old. It should describe key features or sounds without naming the object immediately. Use simple vocabulary.";
+      distractorPrompt = `Provide 3 distinct wrong answers (distractors). IMPORTANT: 2 of these wrong answers MUST start with the letter '${letter}' to make it slightly tricky, and 1 should start with a different letter.`;
+      break;
+    case Difficulty.HARD:
+      difficultyPrompt = "Generate a clever, slightly challenging riddle for a 7-8 year old. Use simple rhymes or describe functions rather than just appearance. The answer should still be a common word known to kids.";
+      distractorPrompt = `Provide 3 distinct wrong answers (distractors). IMPORTANT: 2 of these wrong answers MUST start with the letter '${letter}' to make it challenging, and 1 should start with a different letter.`;
+      break;
+  }
+
   const prompt = `
-    Generate a simple, fun riddle for a 5-year-old child about an animal, food, or object that starts with the letter '${letter}'.
-    Provide the answer (which must start with '${letter}') and 3 distinct wrong answers (distractors) that are also simple words suitable for kids.
+    ${difficultyPrompt}
+    The target word must start with the letter '${letter}'.
+    Provide the answer (which must start with '${letter}').
+    ${distractorPrompt}
     
     Return the response in JSON format.
   `;

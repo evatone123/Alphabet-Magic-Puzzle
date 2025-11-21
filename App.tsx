@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { LetterGrid } from './components/LetterGrid';
 import { GameRound } from './components/GameRound';
 import { Reward } from './components/Reward';
-import { GameState, RiddleData } from './types';
+import { GameState, RiddleData, Difficulty } from './types';
 import { generateRiddle } from './services/gemini';
-import { Loader2, Music, VolumeX } from 'lucide-react';
+import { Baby, Brain, GraduationCap } from 'lucide-react';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
   const [currentLetter, setCurrentLetter] = useState<string>('A');
+  const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.EASY);
   const [riddleData, setRiddleData] = useState<RiddleData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +19,7 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const data = await generateRiddle(letter);
+      const data = await generateRiddle(letter, difficulty);
       setRiddleData(data);
       setGameState(GameState.PLAYING);
     } catch (e) {
@@ -38,10 +39,17 @@ const App: React.FC = () => {
   };
 
   const handlePlayAgain = () => {
-     // Just reload the current letter or go back to menu? 
-     // Let's go back to menu to encourage exploring.
      setGameState(GameState.MENU);
      setRiddleData(null);
+  };
+
+  const getDifficultyColor = (d: Difficulty) => {
+      switch(d) {
+          case Difficulty.EASY: return 'bg-green-500 text-white shadow-lg scale-105';
+          case Difficulty.MEDIUM: return 'bg-yellow-500 text-white shadow-lg scale-105';
+          case Difficulty.HARD: return 'bg-red-500 text-white shadow-lg scale-105';
+          default: return 'bg-gray-200 text-gray-500';
+      }
   };
 
   return (
@@ -70,7 +78,32 @@ const App: React.FC = () => {
 
         {/* Screens */}
         {gameState === GameState.MENU && (
-          <LetterGrid onSelectLetter={handleSelectLetter} />
+          <div className="flex flex-col items-center w-full">
+            <div className="mb-6 flex items-center bg-white p-2 rounded-full shadow-sm border border-blue-100">
+                <button 
+                    onClick={() => setDifficulty(Difficulty.EASY)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-full font-bold transition-all duration-200 ${difficulty === Difficulty.EASY ? getDifficultyColor(Difficulty.EASY) : 'text-gray-400 hover:bg-gray-50'}`}
+                >
+                    <Baby size={20} />
+                    <span>Easy</span>
+                </button>
+                <button 
+                    onClick={() => setDifficulty(Difficulty.MEDIUM)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-full font-bold transition-all duration-200 ${difficulty === Difficulty.MEDIUM ? getDifficultyColor(Difficulty.MEDIUM) : 'text-gray-400 hover:bg-gray-50'}`}
+                >
+                    <Brain size={20} />
+                    <span>Medium</span>
+                </button>
+                <button 
+                    onClick={() => setDifficulty(Difficulty.HARD)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-full font-bold transition-all duration-200 ${difficulty === Difficulty.HARD ? getDifficultyColor(Difficulty.HARD) : 'text-gray-400 hover:bg-gray-50'}`}
+                >
+                    <GraduationCap size={20} />
+                    <span>Hard</span>
+                </button>
+            </div>
+            <LetterGrid onSelectLetter={handleSelectLetter} />
+          </div>
         )}
 
         {gameState === GameState.LOADING_RIDDLE && (

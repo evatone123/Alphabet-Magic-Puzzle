@@ -7,6 +7,12 @@ export enum GameState {
   SHOW_REWARD = 'SHOW_REWARD',
 }
 
+export enum Difficulty {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD',
+}
+
 export interface RiddleData {
   question: string;
   answer: string;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { RiddleData } from '../types';
 import { generateSpeech } from '../services/gemini';
-import { Volume2, ArrowLeft, Sparkles } from 'lucide-react';
+import { Volume2, ArrowLeft } from 'lucide-react';
 
 interface GameRoundProps {
   riddle: RiddleData;
@@ -15,6 +15,22 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
   const [isWrong, setIsWrong] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
 
+  // Sound URLs (using reliable Google Actions sounds)
+  const SOUNDS = {
+    click: 'https://actions.google.com/sounds/v1/ui/click_on_on.ogg',
+    correct: 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg', 
+    wrong: 'https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg',
+    pop: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg'
+  };
+
+  const playSound = (type: keyof typeof SOUNDS) => {
+    const audio = new Audio(SOUNDS[type]);
+    audio.volume = type === 'wrong' ? 0.3 : 0.5;
+    audio.play().catch(() => {
+      // Ignore auto-play errors
+    });
+  };
+
   // Initialize Audio Context
   useEffect(() => {
     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -24,6 +40,7 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
   }, []);
 
   const playRiddleAudio = async () => {
+    playSound('click');
     if (!audioContextRef.current) return;
     
     setIsPlayingAudio(true);
@@ -59,19 +76,21 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
   }, [riddle]);
 
   const handleOptionClick = (option: string) => {
+    if (selectedOption === option && isWrong) return; // Prevent spamming wrong option
+
     setSelectedOption(option);
+    
     if (option === riddle.answer) {
       // Correct!
-      // Play a generic success sound or TTS "Correct!"? Let's just move to state.
-      const snd = new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg'); // Simple open sound if available, else silent
-      snd.play().catch(() => {});
-      onCorrect();
+      playSound('correct');
+      // Add a small delay before showing reward so they hear the sound
+      setTimeout(() => {
+          onCorrect();
+      }, 500);
     } else {
       // Wrong
       setIsWrong(true);
-      const snd = new Audio('https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg'); // funny fail sound
-      snd.volume = 0.2;
-      snd.play().catch(() => {});
+      playSound('wrong');
       
       setTimeout(() => {
         setIsWrong(false);
@@ -84,7 +103,10 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
     <div className="w-full max-w-3xl mx-auto p-6 flex flex-col items-center animate-fade-in">
         {/* Header / Back */}
         <div className="w-full flex items-center justify-between mb-6">
-            <button onClick={onBack} className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition text-gray-700">
+            <button 
+                onClick={() => { playSound('click'); onBack(); }} 
+                className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition text-gray-700"
+            >
                 <ArrowLeft size={32} />
             </button>
             <div className="text-6xl font-bold text-purple-600 drop-shadow-md">{riddle.letter}</div>
@@ -120,7 +142,6 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             {riddle.options.map((option) => {
                 const isSelected = selectedOption === option;
-                const isCorrectAnswer = option === riddle.answer;
                 
                 // Styles for wrong state
                 const wrongStyle = isSelected && isWrong ? 'bg-red-500 text-white shake-animation' : 'bg-white text-gray-700 hover:bg-blue-50';
@@ -128,6 +149,7 @@ export const GameRound: React.FC<GameRoundProps> = ({ riddle, onCorrect, onBack 
                 return (
                     <button
                         key={option}
+                        onMouseDown={() => !isSelected && playSound('pop')}
                         onClick={() => handleOptionClick(option)}
                         className={`
                             relative overflow-hidden
